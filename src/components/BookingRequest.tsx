@@ -14,7 +14,7 @@ import { StatusBadge } from "./StatusBadge";
 import { Button } from "@/components/ui/button";
 import { CommentThread } from "./CommentThread";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Clock, Calendar, ThumbsUp, ThumbsDown, MessageCircle } from "lucide-react";
+import { Clock, Calendar, ThumbsUp, ThumbsDown, MessageCircle, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
 
@@ -39,14 +39,20 @@ export function BookingRequestView({ booking, currentUser, onStatusChange, onAdd
   };
 
   return (
-    <Card className="mb-6">
+    <Card className={`mb-6 ${booking.isDraft ? 'border-dashed border-amber-300' : ''}`}>
+      {booking.isDraft && (
+        <div className="bg-amber-50 px-4 py-2 flex items-center text-amber-800 text-sm">
+          <AlertCircle className="h-4 w-4 mr-2" />
+          <span>Draft - Only visible to you until email verification is complete</span>
+        </div>
+      )}
       <CardHeader>
         <div className="flex items-start justify-between">
           <div>
             <CardTitle>{booking.title}</CardTitle>
             <CardDescription>{booking.roomName}</CardDescription>
           </div>
-          <StatusBadge status={booking.status} />
+          <StatusBadge status={booking.status} draft={booking.isDraft} />
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -78,7 +84,8 @@ export function BookingRequestView({ booking, currentUser, onStatusChange, onAdd
               </AvatarFallback>
             </Avatar>
             <span className="text-sm text-muted-foreground">
-              Requested by {booking.requestedBy.name} on {format(booking.createdAt, "MMM d, yyyy")}
+              Requested by {booking.requestedBy.name} 
+              {booking.requestedBy.email && ` (${booking.requestedBy.email})`} on {format(booking.createdAt, "MMM d, yyyy")}
             </span>
           </div>
         </div>
@@ -103,7 +110,7 @@ export function BookingRequestView({ booking, currentUser, onStatusChange, onAdd
           <MessageCircle className="mr-2 h-4 w-4" />
           {showComments ? "Hide Comments" : `Show Comments${booking.comments.length ? ` (${booking.comments.length})` : ""}`}
         </Button>
-        {booking.status === "pending" && (
+        {!booking.isDraft && booking.status === "pending" && (
           <div className="space-x-2">
             <Button 
               variant="outline" 

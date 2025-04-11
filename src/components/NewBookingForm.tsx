@@ -16,6 +16,9 @@ import { currentUser } from "@/data/mock";
 import { X } from "lucide-react";
 import { BookingRequest } from "@/types";
 import { toast } from "sonner";
+import { EmailForm } from "./EmailForm";
+import { VerificationNotice } from "./VerificationNotice";
+import { storeVerificationItem, getUserEmail, isUserVerified } from "@/utils/emailVerification";
 
 interface NewBookingFormProps {
   onSubmit: (booking: Omit<BookingRequest, "id" | "comments" | "status" | "createdAt">) => void;
@@ -28,6 +31,9 @@ export function NewBookingForm({ onSubmit, onCancel }: NewBookingFormProps) {
   const [description, setDescription] = useState("");
   const [startTime, setStartTime] = useState<Date | undefined>(undefined);
   const [endTime, setEndTime] = useState<Date | undefined>(undefined);
+  const [showEmailForm, setShowEmailForm] = useState(!isUserVerified() && !getUserEmail());
+  const [verificationCode, setVerificationCode] = useState<string | null>(null);
+  const [submittingEmail, setSubmittingEmail] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,13 +48,49 @@ export function NewBookingForm({ onSubmit, onCancel }: NewBookingFormProps) {
       return;
     }
 
+    if (!isUserVerified() && !showEmailForm) {
+      setShowEmailForm(true);
+      return;
+    }
+
+    const updatedUser = {
+      ...currentUser,
+      email: submittingEmail || getUserEmail() || undefined,
+      isVerified: isUserVerified(),
+    };
+
     onSubmit({
       title,
       roomName,
       description,
       startTime,
       endTime,
-      requestedBy: currentUser,
+      requestedBy: updatedUser,
+      isDraft: !isUserVerified(),
+    });
+  };
+
+  const handleEmailSubmit = (email: string) => {
+    setSubmittingEmail(email);
+    setShowEmailForm(false);
+    const code = storeVerificationItem(email, 'booking', 'pending'); // ID is temporary until booking is created
+    setVerificationCode(code);
+  };
+
+  const handleVerified = () => {
+    const updatedUser = {
+      ...currentUser,
+      email: submittingEmail || getUserEmail() || undefined,
+      isVerified: true,
+    };
+
+    onSubmit({
+      title,
+      roomName,
+      description,
+      startTime,
+      endTime,
+      requestedBy: updatedUser,
     });
   };
 
@@ -60,6 +102,53 @@ export function NewBookingForm({ onSubmit, onCancel }: NewBookingFormProps) {
     "Board Room",
     "Training Room",
   ];
+
+  if (showEmailForm) {
+    return (
+      <div className="bg-white rounded-lg border border-border shadow-sm">
+        <div className="flex items-center justify-between border-b border-border p-4">
+          <h2 className="text-lg font-medium">Verify Your Email</h2>
+          <Button variant="ghost" size="icon" onClick={onCancel}>
+            <X className="h-4 w-4" />
+            <span className="sr-only">Close</span>
+          </Button>
+        </div>
+        <div className="p-4">
+          <p className="mb-4 text-muted-foreground">
+            Please provide your email address to continue with your booking request.
+          </p>
+          <EmailForm 
+            onSubmit={handleEmailSubmit} 
+            buttonText="Continue with Booking"
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (verificationCode && !isUserVerified()) {
+    return (
+      <div className="bg-white rounded-lg border border-border shadow-sm">
+        <div className="flex items-center justify-between border-b border-border p-4">
+          <h2 className="text-lg font-medium">Verify Your Email</h2>
+          <Button variant="ghost" size="icon" onClick={onCancel}>
+            <X className="h-4 w-4" />
+            <span className="sr-only">Close</span>
+          </Button>
+        </div>
+        <div className="p-4">
+          <VerificationNotice 
+            email={submittingEmail || getUserEmail() || ''} 
+            verificationCode={verificationCode}
+            onVerified={handleVerified}
+          />
+          <div className="flex justify-end mt-4">
+            <Button variant="outline" onClick={onCancel}>Close</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-lg border border-border shadow-sm">

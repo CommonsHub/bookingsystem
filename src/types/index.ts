@@ -3,6 +3,8 @@ export type User = {
   id: string;
   name: string;
   avatar?: string;
+  email?: string;
+  isVerified?: boolean;
 };
 
 export type Comment = {
@@ -10,6 +12,7 @@ export type Comment = {
   user: User;
   content: string;
   timestamp: Date;
+  isDraft?: boolean;
 };
 
 export type BookingStatus = "pending" | "approved" | "rejected";
@@ -25,4 +28,14 @@ export type BookingRequest = {
   status: BookingStatus;
   comments: Comment[];
   createdAt: Date;
+  isDraft?: boolean;
+};
+
+export type VerificationStatus = {
+  email: string;
+  verifiedAt?: Date;
+  pendingItems: {
+    type: 'booking' | 'comment';
+    id: string;
+  }[];
 };

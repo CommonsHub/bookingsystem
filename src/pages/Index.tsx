@@ -8,6 +8,7 @@ import { NewBookingForm } from "@/components/NewBookingForm";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { v4 as uuidv4 } from "uuid";
+import { isUserVerified } from "@/utils/emailVerification";
 
 const Index = () => {
   const [bookings, setBookings] = useState<BookingRequest[]>(mockBookings);
@@ -35,6 +36,7 @@ const Index = () => {
                   user: currentUser,
                   content,
                   timestamp: new Date(),
+                  isDraft: !isUserVerified(),
                 },
               ],
             }
@@ -52,14 +54,26 @@ const Index = () => {
       status: "pending",
       comments: [],
       createdAt: new Date(),
+      isDraft: booking.isDraft,
     };
 
     setBookings([newBooking, ...bookings]);
     setShowNewBookingForm(false);
-    toast.success("Booking request created successfully");
+    
+    if (booking.isDraft) {
+      toast.info("Booking request saved as draft. Please verify your email to publish it.");
+    } else {
+      toast.success("Booking request created successfully");
+    }
   };
 
-  const filteredBookings = bookings.filter(
+  // Filter bookings to only show non-draft or user's own drafts
+  const visibleBookings = bookings.filter(
+    (booking) => !booking.isDraft || booking.requestedBy.id === currentUser.id
+  );
+  
+  // Then filter by tab
+  const filteredBookings = visibleBookings.filter(
     (booking) => activeTab === "all" || booking.status === activeTab
   );
 
