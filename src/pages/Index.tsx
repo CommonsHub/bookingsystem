@@ -1,11 +1,122 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import { useState } from "react";
+import { mockBookings, currentUser } from "@/data/mock";
+import { BookingRequest, BookingStatus } from "@/types";
+import { Header } from "@/components/Header";
+import { BookingRequestView } from "@/components/BookingRequest";
+import { NewBookingForm } from "@/components/NewBookingForm";
+import { toast } from "sonner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { v4 as uuidv4 } from "uuid";
 
 const Index = () => {
+  const [bookings, setBookings] = useState<BookingRequest[]>(mockBookings);
+  const [showNewBookingForm, setShowNewBookingForm] = useState(false);
+  const [activeTab, setActiveTab] = useState<"all" | BookingStatus>("all");
+
+  const handleStatusChange = (id: string, status: "approved" | "rejected") => {
+    setBookings(
+      bookings.map((booking) =>
+        booking.id === id ? { ...booking, status } : booking
+      )
+    );
+  };
+
+  const handleAddComment = (id: string, content: string) => {
+    setBookings(
+      bookings.map((booking) =>
+        booking.id === id
+          ? {
+              ...booking,
+              comments: [
+                ...booking.comments,
+                {
+                  id: uuidv4(),
+                  user: currentUser,
+                  content,
+                  timestamp: new Date(),
+                },
+              ],
+            }
+          : booking
+      )
+    );
+  };
+
+  const handleCreateBooking = (
+    booking: Omit<BookingRequest, "id" | "comments" | "status" | "createdAt">
+  ) => {
+    const newBooking: BookingRequest = {
+      ...booking,
+      id: uuidv4(),
+      status: "pending",
+      comments: [],
+      createdAt: new Date(),
+    };
+
+    setBookings([newBooking, ...bookings]);
+    setShowNewBookingForm(false);
+    toast.success("Booking request created successfully");
+  };
+
+  const filteredBookings = bookings.filter(
+    (booking) => activeTab === "all" || booking.status === activeTab
+  );
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
+    <div className="min-h-screen bg-gray-50">
+      <Header onNewBooking={() => setShowNewBookingForm(true)} />
+      <div className="container py-6">
+        {showNewBookingForm ? (
+          <div className="max-w-2xl mx-auto mb-8">
+            <NewBookingForm
+              onSubmit={handleCreateBooking}
+              onCancel={() => setShowNewBookingForm(false)}
+            />
+          </div>
+        ) : null}
+
+        <Tabs
+          defaultValue="all"
+          value={activeTab}
+          onValueChange={(value) => setActiveTab(value as "all" | BookingStatus)}
+          className="mb-6"
+        >
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">Booking Requests</h2>
+            <TabsList>
+              <TabsTrigger value="all">All</TabsTrigger>
+              <TabsTrigger value="pending">Pending</TabsTrigger>
+              <TabsTrigger value="approved">Approved</TabsTrigger>
+              <TabsTrigger value="rejected">Rejected</TabsTrigger>
+            </TabsList>
+          </div>
+
+          <TabsContent value={activeTab} className="mt-0">
+            {filteredBookings.length === 0 ? (
+              <div className="text-center py-12 bg-white border border-border rounded-lg shadow-sm">
+                <h3 className="font-medium text-lg">No booking requests found</h3>
+                <p className="text-muted-foreground">
+                  {activeTab === "all"
+                    ? "Create a new booking request to get started"
+                    : `No ${activeTab} booking requests found`}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {filteredBookings.map((booking) => (
+                  <BookingRequestView
+                    key={booking.id}
+                    booking={booking}
+                    currentUser={currentUser}
+                    onStatusChange={handleStatusChange}
+                    onAddComment={handleAddComment}
+                  />
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
