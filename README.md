@@ -17,7 +17,9 @@ booking systems of the CHB.
 * Google Calendar
   * One calendar per room
 * Automation between database and google calendar
+  * Some tries done with n8n
 * Knowledge base about booking the Commons Hub
   * make knowledge accessible 
 * Discord bot to make a booking
 * Email integration
+* Nostr relay as public distributed database
