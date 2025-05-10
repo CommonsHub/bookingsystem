@@ -18,6 +18,7 @@ booking systems of the CHB.
   * One calendar per room
 * Automation between database and google calendar
   * Some tries done with n8n
+  * [Booking System Dabase Trigger](https://github.com/CommonsHub/bookingsystem-dbtrigger)
 * Knowledge base about booking the Commons Hub
   * make knowledge accessible 
 * Discord bot to make a booking
